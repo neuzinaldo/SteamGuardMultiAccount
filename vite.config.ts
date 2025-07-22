@@ -20,6 +20,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: ['jspdf', 'jspdf-autotable'],
+    include: ['jspdf', 'jspdf-autotable', 'jspdf > jspdf-autotable'],
   },
 });

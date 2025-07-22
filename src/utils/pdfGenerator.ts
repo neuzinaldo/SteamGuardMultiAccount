@@ -1,16 +1,6 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { Transaction } from '../types';
-
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: {
-      finalY: number;
-    };
-  }
-}
 
 export function generatePDFReport(transactions: Transaction[], year: number) {
   try {
@@ -21,11 +11,11 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
 
     // Header
     doc.setFontSize(20);
-    doc.setTextColor(40, 40, 40); // RGB format
+    doc.setTextColor(40, 40, 40);
     doc.text('Relatório Anual de Movimentação de Caixa', 20, 30);
 
     doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100); // RGB format
+    doc.setTextColor(100, 100, 100);
     doc.text(`Ano: ${year}`, 20, 45);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
 
@@ -66,8 +56,8 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
       ]);
     }
 
-    // Add monthly summary table
-    doc.autoTable({
+    // Add monthly summary table using the imported autoTable function
+    autoTable(doc, {
       head: [['Mês', 'Entradas', 'Saídas', 'Saldo']],
       body: monthlyData,
       startY: 70,
@@ -76,40 +66,41 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
         cellPadding: 5,
       },
       headStyles: {
-        fillColor: [59, 130, 246], // RGB format
-        textColor: [255, 255, 255], // RGB format
+        fillColor: [59, 130, 246],
+        textColor: [255, 255, 255],
         fontStyle: 'bold',
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245], // RGB format
+        fillColor: [245, 245, 245],
       },
     });
 
-    // Add yearly totals
-    const finalY = doc.lastAutoTable.finalY + 20;
+    // Get the final Y position from the last table
+    const finalY = (doc as any).lastAutoTable.finalY + 20;
     
+    // Add yearly totals
     doc.setFontSize(14);
-    doc.setTextColor(40, 40, 40); // RGB format
+    doc.setTextColor(40, 40, 40);
     doc.text('Resumo Anual:', 20, finalY);
 
     doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100); // RGB format
+    doc.setTextColor(100, 100, 100);
     doc.text(`Total de Entradas: R$ ${yearlyIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 15);
     doc.text(`Total de Saídas: R$ ${yearlyExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 30);
     
     const yearlyBalance = yearlyIncome - yearlyExpense;
     // Set color based on balance (green for positive, red for negative)
     if (yearlyBalance >= 0) {
-      doc.setTextColor(34, 197, 94); // Green in RGB
+      doc.setTextColor(34, 197, 94);
     } else {
-      doc.setTextColor(239, 68, 68); // Red in RGB
+      doc.setTextColor(239, 68, 68);
     }
     doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 45);
 
     // Add detailed transactions if there's space
     if (finalY + 70 < 250 && transactions.length > 0) {
       doc.setFontSize(14);
-      doc.setTextColor(40, 40, 40); // RGB format
+      doc.setTextColor(40, 40, 40);
       doc.text('Transações Detalhadas (Últimas 20):', 20, finalY + 65);
 
       const detailedData = transactions
@@ -123,7 +114,7 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
           `R$ ${Number(t.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
         ]);
 
-      doc.autoTable({
+      autoTable(doc, {
         head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
         body: detailedData,
         startY: finalY + 75,
@@ -132,12 +123,12 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
           cellPadding: 3,
         },
         headStyles: {
-          fillColor: [59, 130, 246], // RGB format
-          textColor: [255, 255, 255], // RGB format
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
           fontStyle: 'bold',
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 245], // RGB format
+          fillColor: [245, 245, 245],
         },
         columnStyles: {
           3: { cellWidth: 50 },
