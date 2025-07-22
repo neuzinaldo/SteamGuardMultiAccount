@@ -1,9 +1,22 @@
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 import { Transaction } from '../types';
+
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable: {
+      finalY: number;
+    };
+  }
+}
 
 export function generatePDFReport(transactions: Transaction[], year: number) {
   try {
+    console.log('Iniciando geração do PDF...');
+    console.log('Transações recebidas:', transactions.length);
+    
     const doc = new jsPDF();
 
     // Header
@@ -16,7 +29,7 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     doc.text(`Ano: ${year}`, 20, 45);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
 
-    // Monthly summary
+    // Calculate monthly summary
     const monthlyData = [];
     const months = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -54,7 +67,7 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     }
 
     // Add monthly summary table
-    autoTable(doc, {
+    doc.autoTable({
       head: [['Mês', 'Entradas', 'Saídas', 'Saldo']],
       body: monthlyData,
       startY: 70,
@@ -73,7 +86,7 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     });
 
     // Add yearly totals
-    const finalY = (doc as any).lastAutoTable.finalY + 20;
+    const finalY = doc.lastAutoTable.finalY + 20;
     
     doc.setFontSize(14);
     doc.setTextColor(40);
@@ -88,15 +101,15 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     doc.setTextColor(yearlyBalance >= 0 ? [34, 197, 94] : [239, 68, 68]);
     doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 45);
 
-    // Add detailed transactions if space allows
-    if (finalY + 70 < 250) {
+    // Add detailed transactions if there's space
+    if (finalY + 70 < 250 && transactions.length > 0) {
       doc.setFontSize(14);
       doc.setTextColor(40);
-      doc.text('Transações Detalhadas:', 20, finalY + 65);
+      doc.text('Transações Detalhadas (Últimas 20):', 20, finalY + 65);
 
       const detailedData = transactions
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 20) // Limit to first 20 transactions
+        .slice(0, 20)
         .map(t => [
           new Date(t.date).toLocaleDateString('pt-BR'),
           t.type === 'income' ? 'Entrada' : 'Saída',
@@ -105,7 +118,7 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
           `R$ ${Number(t.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
         ]);
 
-      autoTable(doc, {
+      doc.autoTable({
         head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
         body: detailedData,
         startY: finalY + 75,
@@ -122,18 +135,20 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
           fillColor: [245, 245, 245],
         },
         columnStyles: {
-          3: { cellWidth: 50 }, // Description column
+          3: { cellWidth: 50 },
         },
       });
     }
 
     // Save the PDF
-    doc.save(`relatorio-caixa-${year}.pdf`);
+    const fileName = `relatorio-caixa-${year}.pdf`;
+    doc.save(fileName);
     
-    console.log('PDF gerado com sucesso!');
+    console.log('PDF gerado com sucesso:', fileName);
+    return true;
     
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
-    alert('Erro ao gerar o relatório PDF. Verifique o console para mais detalhes.');
+    console.error('Erro detalhado ao gerar PDF:', error);
+    throw new Error(`Erro ao gerar PDF: ${error.message}`);
   }
 }

@@ -94,16 +94,25 @@ export function TransactionList() {
   };
 
   const handleGeneratePDF = () => {
+    console.log('Botão PDF clicado');
+    console.log('Transações disponíveis:', transactions.length);
+    
     try {
       if (transactions.length === 0) {
         alert('Não há transações para gerar o relatório.');
         return;
       }
-      console.log('Gerando PDF com', transactions.length, 'transações');
-      generatePDFReport(transactions, filters.year);
+      
+      console.log('Iniciando geração do PDF...');
+      const success = generatePDFReport(transactions, filters.year);
+      
+      if (success) {
+        console.log('PDF gerado com sucesso!');
+      }
+      
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar o relatório PDF. Tente novamente.');
+      alert(`Erro ao gerar o relatório PDF: ${error.message}`);
     }
   };
 

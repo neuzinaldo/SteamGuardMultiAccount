@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   base: './',
+  define: {
+    global: 'globalThis',
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -17,5 +20,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['jspdf', 'jspdf-autotable'],
   },
 });
