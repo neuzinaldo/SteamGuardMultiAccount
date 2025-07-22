@@ -21,11 +21,11 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
 
     // Header
     doc.setFontSize(20);
-    doc.setTextColor(40);
+    doc.setTextColor(40, 40, 40); // RGB format
     doc.text('Relatório Anual de Movimentação de Caixa', 20, 30);
 
     doc.setFontSize(12);
-    doc.setTextColor(100);
+    doc.setTextColor(100, 100, 100); // RGB format
     doc.text(`Ano: ${year}`, 20, 45);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
 
@@ -76,12 +76,12 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
         cellPadding: 5,
       },
       headStyles: {
-        fillColor: [59, 130, 246],
-        textColor: [255, 255, 255],
+        fillColor: [59, 130, 246], // RGB format
+        textColor: [255, 255, 255], // RGB format
         fontStyle: 'bold',
       },
       alternateRowStyles: {
-        fillColor: [245, 245, 245],
+        fillColor: [245, 245, 245], // RGB format
       },
     });
 
@@ -89,22 +89,27 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     const finalY = doc.lastAutoTable.finalY + 20;
     
     doc.setFontSize(14);
-    doc.setTextColor(40);
+    doc.setTextColor(40, 40, 40); // RGB format
     doc.text('Resumo Anual:', 20, finalY);
 
     doc.setFontSize(12);
-    doc.setTextColor(100);
+    doc.setTextColor(100, 100, 100); // RGB format
     doc.text(`Total de Entradas: R$ ${yearlyIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 15);
     doc.text(`Total de Saídas: R$ ${yearlyExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 30);
     
     const yearlyBalance = yearlyIncome - yearlyExpense;
-    doc.setTextColor(yearlyBalance >= 0 ? [34, 197, 94] : [239, 68, 68]);
+    // Set color based on balance (green for positive, red for negative)
+    if (yearlyBalance >= 0) {
+      doc.setTextColor(34, 197, 94); // Green in RGB
+    } else {
+      doc.setTextColor(239, 68, 68); // Red in RGB
+    }
     doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 45);
 
     // Add detailed transactions if there's space
     if (finalY + 70 < 250 && transactions.length > 0) {
       doc.setFontSize(14);
-      doc.setTextColor(40);
+      doc.setTextColor(40, 40, 40); // RGB format
       doc.text('Transações Detalhadas (Últimas 20):', 20, finalY + 65);
 
       const detailedData = transactions
@@ -127,12 +132,12 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
           cellPadding: 3,
         },
         headStyles: {
-          fillColor: [59, 130, 246],
-          textColor: [255, 255, 255],
+          fillColor: [59, 130, 246], // RGB format
+          textColor: [255, 255, 255], // RGB format
           fontStyle: 'bold',
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 245],
+          fillColor: [245, 245, 245], // RGB format
         },
         columnStyles: {
           3: { cellWidth: 50 },
