@@ -13,7 +13,6 @@ import { TransactionForm } from './TransactionForm';
 import { CategoryModal } from './CategoryModal';
 import { generatePDFReport } from '../utils/pdfGenerator';
 import { useCategories } from '../hooks/useCategories';
-import { supabase } from '../lib/supabase';
 
 export function TransactionList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -146,7 +145,7 @@ export function TransactionList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Lançamentos</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={handleClearAllData}
             className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
@@ -156,10 +155,10 @@ export function TransactionList() {
           </button>
           <button
             onClick={() => setIsCategoryModalOpen(true)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-purple-300 rounded-md shadow-sm text-sm font-medium text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
           >
             <TagIcon className="h-4 w-4 mr-2" />
-            Categorias
+            Gerenciar Categorias
           </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
