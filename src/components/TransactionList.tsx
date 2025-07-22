@@ -4,16 +4,20 @@ import {
   PencilIcon, 
   TrashIcon,
   DocumentArrowDownIcon,
-  FunnelIcon
+  FunnelIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 import { Transaction, CATEGORIES } from '../types';
 import { useTransactions } from '../hooks/useTransactions';
 import { TransactionForm } from './TransactionForm';
+import { CategoryModal } from './CategoryModal';
 import { generatePDFReport } from '../utils/pdfGenerator';
+import { useCategories } from '../hooks/useCategories';
 import { supabase } from '../lib/supabase';
 
 export function TransactionList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
@@ -32,6 +36,8 @@ export function TransactionList() {
     updateTransaction, 
     deleteTransaction 
   } = useTransactions();
+  
+  const { customCategories } = useCategories();
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -149,6 +155,13 @@ export function TransactionList() {
             Limpar Todos
           </button>
           <button
+            onClick={() => setIsCategoryModalOpen(true)}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <TagIcon className="h-4 w-4 mr-2" />
+            Categorias
+          </button>
+          <button
             onClick={() => setShowFilters(!showFilters)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
@@ -249,7 +262,11 @@ export function TransactionList() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Todas</option>
-                {[...CATEGORIES.income, ...CATEGORIES.expense].map(category => (
+                {[
+                  ...CATEGORIES.income, 
+                  ...CATEGORIES.expense,
+                  ...customCategories.map(c => c.name)
+                ].map(category => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
@@ -426,6 +443,11 @@ export function TransactionList() {
         onSubmit={handleSubmit}
         transaction={editingTransaction}
         title={editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
+      />
+      
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
       />
     </div>
   );

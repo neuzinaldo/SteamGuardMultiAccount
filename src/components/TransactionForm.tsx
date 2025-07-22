@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionFormData, CATEGORIES } from '../types';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useCategories } from '../hooks/useCategories';
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function TransactionForm({
     category: '',
   });
   const [loading, setLoading] = useState(false);
+  const { customCategories } = useCategories();
 
   useEffect(() => {
     if (transaction) {
@@ -66,15 +68,30 @@ export function TransactionForm({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name === 'amount') {
+      // Permitir vírgula como separador decimal
+      const formattedValue = value.replace(',', '.');
+      setFormData(prev => ({
+        ...prev,
+        [name]: formattedValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   if (!isOpen) return null;
 
-  const availableCategories = CATEGORIES[formData.type];
+  // Combinar categorias padrão com categorias personalizadas
+  const defaultCategories = CATEGORIES[formData.type];
+  const userCategories = customCategories
+    .filter(c => c.type === formData.type)
+    .map(c => c.name);
+  const availableCategories = [...defaultCategories, ...userCategories];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -168,13 +185,12 @@ export function TransactionForm({
                 <input
                   type="number"
                   name="amount"
-                  value={formData.amount}
+                  value={formData.amount.toString().replace('.', ',')}
                   onChange={handleChange}
                   required
-                  min="0"
-                  step="0.01"
+                  pattern="[0-9]+([,\.][0-9]{1,2})?"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Digite o valor"
+                  placeholder="Digite o valor (ex: 100,50)"
                 />
               </div>
             </form>

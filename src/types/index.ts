@@ -39,6 +39,14 @@ export interface DashboardMetrics {
   yearlyData: MonthlyData[];
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  type: 'income' | 'expense';
+  user_id: string;
+  created_at: string;
+}
+
 export const CATEGORIES = {
   income: ['Salário', 'Freelance', 'Vendas', 'Investimentos', 'Outros'],
   expense: ['Alimentação', 'Transporte', 'Moradia', 'Saúde', 'Educação', 'Lazer', 'Outros']
