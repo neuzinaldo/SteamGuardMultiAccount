@@ -94,7 +94,17 @@ export function TransactionList() {
   };
 
   const handleGeneratePDF = () => {
-    generatePDFReport(transactions, filters.year);
+    try {
+      if (transactions.length === 0) {
+        alert('Não há transações para gerar o relatório.');
+        return;
+      }
+      console.log('Gerando PDF com', transactions.length, 'transações');
+      generatePDFReport(transactions, filters.year);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar o relatório PDF. Tente novamente.');
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -138,7 +148,8 @@ export function TransactionList() {
           </button>
           <button
             onClick={handleGeneratePDF}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={transactions.length === 0}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
             Relatório PDF
