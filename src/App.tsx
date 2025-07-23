@@ -4,11 +4,13 @@ import { AuthForm } from './components/AuthForm';
 import { Dashboard } from './components/Dashboard';
 import { TransactionList } from './components/TransactionList';
 import { Layout } from './components/Layout';
+import { CategoryModal } from './components/CategoryModal';
 
 function App() {
   const { user, loading } = useAuth();
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'transactions'>('dashboard');
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   if (loading) {
     return (
@@ -25,11 +27,33 @@ function App() {
     return <AuthForm mode={authMode} onModeChange={setAuthMode} />;
   }
 
+  const handleGenerateMonthlyReport = () => {
+    // Disparar evento para o TransactionList gerar relatório mensal
+    window.dispatchEvent(new CustomEvent('generateMonthlyReport'));
+  };
+
+  const handleGenerateAnnualReport = () => {
+    // Disparar evento para o TransactionList gerar relatório anual
+    window.dispatchEvent(new CustomEvent('generateAnnualReport'));
+  };
   // Renderizar o layout principal com as abas
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      {activeTab === 'dashboard' ? <Dashboard /> : <TransactionList />}
-    </Layout>
+    <>
+      <Layout 
+        activeTab={activeTab} 
+        onTabChange={setActiveTab}
+        onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
+        onGenerateMonthlyReport={handleGenerateMonthlyReport}
+        onGenerateAnnualReport={handleGenerateAnnualReport}
+      >
+        {activeTab === 'dashboard' ? <Dashboard /> : <TransactionList />}
+      </Layout>
+      
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+      />
+    </>
   );
 }
 

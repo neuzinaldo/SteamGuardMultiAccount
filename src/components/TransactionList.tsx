@@ -3,21 +3,17 @@ import {
   PlusIcon, 
   PencilIcon, 
   TrashIcon,
-  DocumentArrowDownIcon,
   FunnelIcon,
-  TagIcon
 } from '@heroicons/react/24/outline';
 import { Transaction, CATEGORIES } from '../types';
 import { useTransactions } from '../hooks/useTransactions';
 import { TransactionForm } from './TransactionForm';
-import { CategoryModal } from './CategoryModal';
 import { generatePDFReport } from '../utils/pdfGenerator';
 import { useCategories } from '../hooks/useCategories';
 import { supabase } from '../lib/supabase';
 
 export function TransactionList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +54,24 @@ export function TransactionList() {
     loadTransactions();
   }, [filters]);
 
+  // Escutar eventos de geração de relatórios vindos do menu lateral
+  useEffect(() => {
+    const handleGenerateMonthlyReport = () => {
+      handleGenerateMonthlyPDF();
+    };
+
+    const handleGenerateAnnualReport = () => {
+      handleGenerateAnnualPDF();
+    };
+
+    window.addEventListener('generateMonthlyReport', handleGenerateMonthlyReport);
+    window.addEventListener('generateAnnualReport', handleGenerateAnnualReport);
+
+    return () => {
+      window.removeEventListener('generateMonthlyReport', handleGenerateMonthlyReport);
+      window.removeEventListener('generateAnnualReport', handleGenerateAnnualReport);
+    };
+  }, [transactions, filters]);
 
   const handleSubmit = async (data: any) => {
     try {
@@ -231,33 +245,6 @@ export function TransactionList() {
             >
               <PlusIcon className="h-4 w-4 mr-2" />
               Novo Lançamento
-            </button>
-          </div>
-          
-          {/* Segunda linha de botões */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleGenerateMonthlyPDF}
-              disabled={transactions.length === 0}
-              className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-              Relatório Mensal
-            </button>
-            <button
-              onClick={handleGenerateAnnualPDF}
-              disabled={transactions.length === 0}
-              className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-md shadow-sm text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-              Relatório Anual
-            </button>
-            <button
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="inline-flex items-center px-4 py-2 border border-purple-300 rounded-md shadow-sm text-sm font-medium text-purple-700 bg-white hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              <TagIcon className="h-4 w-4 mr-2" />
-              Gerenciar Categorias
             </button>
           </div>
         </div>
@@ -514,11 +501,6 @@ export function TransactionList() {
         onSubmit={handleSubmit}
         transaction={editingTransaction}
         title={editingTransaction ? 'Editar Lançamento' : 'Novo Lançamento'}
-      />
-      
-      <CategoryModal
-        isOpen={isCategoryModalOpen}
-        onClose={() => setIsCategoryModalOpen(false)}
       />
     </div>
   );

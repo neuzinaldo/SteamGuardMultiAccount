@@ -4,7 +4,9 @@ import {
   CurrencyDollarIcon, 
   ArrowRightOnRectangleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  DocumentArrowDownIcon,
+  TagIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
 
@@ -12,9 +14,19 @@ interface LayoutProps {
   children: React.ReactNode;
   activeTab: 'dashboard' | 'transactions';
   onTabChange: (tab: 'dashboard' | 'transactions') => void;
+  onOpenCategoryModal?: () => void;
+  onGenerateMonthlyReport?: () => void;
+  onGenerateAnnualReport?: () => void;
 }
 
-export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
+export function Layout({ 
+  children, 
+  activeTab, 
+  onTabChange, 
+  onOpenCategoryModal,
+  onGenerateMonthlyReport,
+  onGenerateAnnualReport 
+}: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, signOut } = useAuth();
 
@@ -27,6 +39,26 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
     { name: 'Lançamentos', href: 'transactions', icon: CurrencyDollarIcon },
   ];
 
+  const reportActions = [
+    { 
+      name: 'Relatório Mensal', 
+      action: onGenerateMonthlyReport, 
+      icon: DocumentArrowDownIcon,
+      color: 'text-green-600 hover:text-green-700'
+    },
+    { 
+      name: 'Relatório Anual', 
+      action: onGenerateAnnualReport, 
+      icon: DocumentArrowDownIcon,
+      color: 'text-blue-600 hover:text-blue-700'
+    },
+    { 
+      name: 'Gerenciar Categorias', 
+      action: onOpenCategoryModal, 
+      icon: TagIcon,
+      color: 'text-purple-600 hover:text-purple-700'
+    },
+  ];
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
       {/* Mobile menu */}
@@ -63,6 +95,24 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
                       ? 'bg-blue-100 text-blue-900'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   } group flex items-center px-2 py-2 text-base font-medium rounded-md w-full`}
+                >
+                  <item.icon className="mr-4 flex-shrink-0 h-6 w-6" />
+                  {item.name}
+                </button>
+              ))}
+              
+              {/* Divider */}
+              <div className="border-t border-gray-200 my-4"></div>
+              
+              {/* Report Actions */}
+              {reportActions.map((item) => (
+                <button
+                  key={item.name}
+                  onClick={() => {
+                    if (item.action) item.action();
+                    setSidebarOpen(false);
+                  }}
+                  className={`${item.color} group flex items-center px-2 py-2 text-base font-medium rounded-md w-full hover:bg-gray-50`}
                 >
                   <item.icon className="mr-4 flex-shrink-0 h-6 w-6" />
                   {item.name}
@@ -116,6 +166,21 @@ export function Layout({ children, activeTab, onTabChange }: LayoutProps) {
                         ? 'bg-blue-100 text-blue-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full`}
+                  >
+                    <item.icon className="mr-3 flex-shrink-0 h-6 w-6" />
+                    {item.name}
+                  </button>
+                ))}
+                
+                {/* Divider */}
+                <div className="border-t border-gray-200 my-4"></div>
+                
+                {/* Report Actions */}
+                {reportActions.map((item) => (
+                  <button
+                    key={item.name}
+                    onClick={() => item.action && item.action()}
+                    className={`${item.color} group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full hover:bg-gray-50`}
                   >
                     <item.icon className="mr-3 flex-shrink-0 h-6 w-6" />
                     {item.name}
