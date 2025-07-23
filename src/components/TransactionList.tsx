@@ -14,7 +14,6 @@ import { CategoryModal } from './CategoryModal';
 import { generatePDFReport } from '../utils/pdfGenerator';
 import { useCategories } from '../hooks/useCategories';
 import { supabase } from '../lib/supabase';
-import { useCategorySync } from '../hooks/useCategorySync';
 
 export function TransactionList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -39,17 +38,7 @@ export function TransactionList() {
     deleteTransaction 
   } = useTransactions();
   
-  const { customCategories, fetchCategories, loading: categoriesLoading } = useCategories();
-  
-  // Sincronizar categorias quando houver atualizações
-  useCategorySync(() => {
-    try {
-      fetchCategories();
-    } catch (err) {
-      console.error('Erro ao sincronizar categorias:', err);
-      setError('Erro ao carregar categorias');
-    }
-  });
+  const { customCategories, fetchCategories } = useCategories();
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
@@ -69,16 +58,6 @@ export function TransactionList() {
     loadTransactions();
   }, [filters]);
 
-  useEffect(() => {
-    // Recarregar categorias quando o modal for fechado
-    if (!isCategoryModalOpen) {
-      try {
-        fetchCategories();
-      } catch (err) {
-        console.error('Erro ao recarregar categorias:', err);
-      }
-    }
-  }, [isCategoryModalOpen, fetchCategories]);
 
   const handleSubmit = async (data: any) => {
     try {
@@ -390,7 +369,7 @@ export function TransactionList() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {(loading || categoriesLoading) ? (
+        {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <span className="ml-2 text-gray-600">Carregando...</span>

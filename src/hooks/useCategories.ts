@@ -12,7 +12,12 @@ export function useCategories() {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) {
+        console.log('Usuário não autenticado');
+        setCustomCategories([]);
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('categories')
@@ -24,6 +29,7 @@ export function useCategories() {
       setCustomCategories(data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCustomCategories([]);
     } finally {
       setLoading(false);
     }
@@ -42,6 +48,12 @@ export function useCategories() {
         .select();
 
       if (error) throw error;
+      
+      // Atualizar a lista local imediatamente
+      if (data && data[0]) {
+        setCustomCategories(prev => [...prev, data[0]]);
+      }
+      
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -62,6 +74,10 @@ export function useCategories() {
         .eq('user_id', user.id);
 
       if (error) throw error;
+      
+      // Remover da lista local imediatamente
+      setCustomCategories(prev => prev.filter(cat => cat.id !== id));
+      
       return { error: null };
     } catch (error) {
       return { error };
@@ -71,7 +87,6 @@ export function useCategories() {
   useEffect(() => {
     fetchCategories();
     
-    // Escutar eventos de atualização de categoria
     const handleCategoryUpdate = () => {
       fetchCategories();
     };

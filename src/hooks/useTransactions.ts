@@ -14,15 +14,24 @@ export function useTransactions() {
   }) => {
     if (!supabase) {
       console.log('Supabase não configurado');
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('Usuário não autenticado');
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+
       let query = supabase
         .from('transactions')
         .select('*')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
       if (filters?.month && filters?.year) {
@@ -47,6 +56,7 @@ export function useTransactions() {
       setTransactions(data || []);
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }

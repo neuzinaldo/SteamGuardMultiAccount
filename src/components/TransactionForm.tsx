@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionFormData, CATEGORIES } from '../types';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useCategories } from '../hooks/useCategories';
-import { useCategorySync } from '../hooks/useCategorySync';
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -29,10 +28,18 @@ export function TransactionForm({
   const [loading, setLoading] = useState(false);
   const { customCategories, fetchCategories } = useCategories();
   
-  // Sincronizar categorias quando houver atualizações
-  useCategorySync(() => {
-    fetchCategories();
-  });
+  // Escutar atualizações de categoria
+  useEffect(() => {
+    const handleCategoryUpdate = () => {
+      fetchCategories();
+    };
+    
+    window.addEventListener('categoryUpdated', handleCategoryUpdate);
+    
+    return () => {
+      window.removeEventListener('categoryUpdated', handleCategoryUpdate);
+    };
+  }, [fetchCategories]);
 
   useEffect(() => {
     if (transaction) {
@@ -64,8 +71,6 @@ export function TransactionForm({
         amount: parseFloat(formData.amount) || 0
       };
       await onSubmit(submitData);
-      // Recarregar categorias após adicionar transação
-      window.dispatchEvent(new CustomEvent('categoryUpdated'));
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);

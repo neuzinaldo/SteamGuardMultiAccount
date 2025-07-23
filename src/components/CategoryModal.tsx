@@ -23,8 +23,8 @@ export function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
       if (!result.error) {
         setNewCategoryName('');
         setNewCategoryType('expense');
-        // Recarregar as categorias imediatamente
-        await fetchCategories();
+        // Disparar evento para atualizar outros componentes
+        window.dispatchEvent(new CustomEvent('categoryUpdated'));
       } else {
         alert('Erro ao criar categoria: ' + result.error.message);
       }
@@ -40,12 +40,9 @@ export function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
       const result = await deleteCategory(id);
       if (result.error) {
         alert('Erro ao excluir categoria: ' + result.error.message);
-      } else {
-        // Recarregar as categorias imediatamente
-        await fetchCategories();
-        // Disparar evento para outros componentes
-        window.dispatchEvent(new CustomEvent('categoryUpdated'));
       }
+      // Sempre disparar evento, mesmo em caso de erro para tentar recarregar
+      window.dispatchEvent(new CustomEvent('categoryUpdated'));
     }
   };
 
