@@ -58,6 +58,8 @@ export function TransactionForm({
         amount: parseFloat(formData.amount) || 0
       };
       await onSubmit(submitData);
+      // Recarregar categorias após adicionar transação
+      window.dispatchEvent(new CustomEvent('categoryUpdated'));
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -70,11 +72,26 @@ export function TransactionForm({
     const { name, value } = e.target;
     
     if (name === 'amount') {
-      // Permitir vírgula como separador decimal
-      const formattedValue = value.replace(',', '.');
+      // Permitir vírgula como separador decimal e manter formatação
+      let formattedValue = value;
+      // Permitir apenas números, vírgula e ponto
+      formattedValue = formattedValue.replace(/[^0-9,\.]/g, '');
+      // Se tem vírgula, manter apenas a primeira
+      const commaIndex = formattedValue.indexOf(',');
+      if (commaIndex !== -1) {
+        formattedValue = formattedValue.substring(0, commaIndex + 1) + 
+                        formattedValue.substring(commaIndex + 1).replace(/[,\.]/g, '');
+      }
       setFormData(prev => ({
         ...prev,
         [name]: formattedValue
+      }));
+    } else if (name === 'type') {
+      // Limpar categoria quando mudar o tipo
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        category: ''
       }));
     } else {
       setFormData(prev => ({
@@ -183,15 +200,17 @@ export function TransactionForm({
                   Valor (R$) *
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="amount"
-                  value={formData.amount.toString().replace('.', ',')}
+                  value={formData.amount}
                   onChange={handleChange}
                   required
-                  pattern="[0-9]+([,\.][0-9]{1,2})?"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Digite o valor (ex: 100,50)"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Use vírgula para separar os centavos (ex: 100,50)
+                </p>
               </div>
             </form>
           </div>

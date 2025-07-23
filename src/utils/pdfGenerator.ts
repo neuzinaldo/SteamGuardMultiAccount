@@ -1,65 +1,104 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Transaction } from '../types';
+import { format } from 'date-fns';
 
-export function generatePDFReport(transactions: Transaction[], year: number) {
+export function generatePDFReport(transactions: Transaction[], year: number, isMonthly: boolean = false, month?: number) {
   try {
-    console.log('Iniciando geração do PDF...');
-    console.log('Transações recebidas:', transactions.length);
+    const reportType = isMonthly ? 'Mensal' : 'Anual';
+    const periodText = isMonthly && month ? 
+      `${format(new Date(year, month - 1, 1), 'MMMM')} de ${year}` : 
+      `${year}`;
     
     const doc = new jsPDF();
 
     // Header
     doc.setFontSize(20);
     doc.setTextColor(40, 40, 40);
-    doc.text('Relatório Anual de Movimentação de Caixa', 20, 30);
+    doc.text(`Relatório ${reportType} de Movimentação de Caixa`, 20, 30);
 
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Ano: ${year}`, 20, 45);
+    doc.text(`Período: ${periodText}`, 20, 45);
     doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
-
-    // Calculate monthly summary
-    const monthlyData = [];
-    const months = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
 
     let yearlyIncome = 0;
     let yearlyExpense = 0;
 
-    for (let month = 1; month <= 12; month++) {
-      const monthTransactions = transactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        return transactionDate.getMonth() + 1 === month && transactionDate.getFullYear() === year;
+    // Calculate totals
+    yearlyIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    yearlyExpense = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    let summaryData = [];
+
+    if (isMonthly) {
+      // Para relatório mensal, mostrar resumo por categoria
+      const categories = [...new Set(transactions.map(t => t.category))];
+      
+      categories.forEach(category => {
+        const categoryTransactions = transactions.filter(t => t.category === category);
+        const income = categoryTransactions
+          .filter(t => t.type === 'income')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        const expense = categoryTransactions
+          .filter(t => t.type === 'expense')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
+        
+        if (income > 0 || expense > 0) {
+          summaryData.push([
+            category,
+            `R$ ${income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            `R$ ${expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            `R$ ${(income - expense).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+          ]);
+        }
       });
+    } else {
+      // Para relatório anual, mostrar resumo mensal
+      const months = [
+        'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      ];
 
-      const income = monthTransactions
-        .filter(t => t.type === 'income')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+      for (let monthNum = 1; monthNum <= 12; monthNum++) {
+        const monthTransactions = transactions.filter(t => {
+          const transactionDate = new Date(t.date);
+          return transactionDate.getMonth() + 1 === monthNum && transactionDate.getFullYear() === year;
+        });
 
-      const expense = monthTransactions
-        .filter(t => t.type === 'expense')
-        .reduce((sum, t) => sum + Number(t.amount), 0);
+        const income = monthTransactions
+          .filter(t => t.type === 'income')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      const balance = income - expense;
+        const expense = monthTransactions
+          .filter(t => t.type === 'expense')
+          .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      yearlyIncome += income;
-      yearlyExpense += expense;
+        const balance = income - expense;
 
-      monthlyData.push([
-        months[month - 1],
-        `R$ ${income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-        `R$ ${expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-        `R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-      ]);
+        summaryData.push([
+          months[monthNum - 1],
+          `R$ ${income.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          `R$ ${expense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          `R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        ]);
+      }
     }
 
-    // Add monthly summary table using the imported autoTable function
+    // Add summary table
+    const tableTitle = isMonthly ? 'Resumo por Categoria' : 'Resumo Mensal';
+    const headerRow = isMonthly ? 
+      ['Categoria', 'Entradas', 'Saídas', 'Saldo'] :
+      ['Mês', 'Entradas', 'Saídas', 'Saldo'];
+
     autoTable(doc, {
-      head: [['Mês', 'Entradas', 'Saídas', 'Saldo']],
-      body: monthlyData,
+      head: [headerRow],
+      body: summaryData,
       startY: 70,
       styles: {
         fontSize: 10,
@@ -81,7 +120,7 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     // Add yearly totals
     doc.setFontSize(14);
     doc.setTextColor(40, 40, 40);
-    doc.text('Resumo Anual:', 20, finalY);
+    doc.text(`Resumo ${reportType}:`, 20, finalY);
 
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
@@ -101,11 +140,11 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     if (finalY + 70 < 250 && transactions.length > 0) {
       doc.setFontSize(14);
       doc.setTextColor(40, 40, 40);
-      doc.text('Transações Detalhadas (Últimas 20):', 20, finalY + 65);
+      doc.text(`Transações Detalhadas (${isMonthly ? 'Todas' : 'Últimas 20'}):`, 20, finalY + 65);
 
       const detailedData = transactions
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 20)
+        .slice(0, isMonthly ? transactions.length : 20)
         .map(t => [
           new Date(t.date).toLocaleDateString('pt-BR'),
           t.type === 'income' ? 'Entrada' : 'Saída',
@@ -137,10 +176,11 @@ export function generatePDFReport(transactions: Transaction[], year: number) {
     }
 
     // Save the PDF
-    const fileName = `relatorio-caixa-${year}.pdf`;
+    const fileName = isMonthly ? 
+      `relatorio-mensal-${year}-${month?.toString().padStart(2, '0')}.pdf` :
+      `relatorio-anual-${year}.pdf`;
     doc.save(fileName);
     
-    console.log('PDF gerado com sucesso:', fileName);
     return true;
     
   } catch (error) {
