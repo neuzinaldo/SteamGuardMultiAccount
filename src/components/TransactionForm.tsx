@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, TransactionFormData, CATEGORIES } from '../types';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useCategories } from '../hooks/useCategories';
+import { useCategorySync } from '../hooks/useCategorySync';
 
 interface TransactionFormProps {
   isOpen: boolean;

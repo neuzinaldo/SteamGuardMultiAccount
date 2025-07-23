@@ -14,11 +14,13 @@ import { CategoryModal } from './CategoryModal';
 import { generatePDFReport } from '../utils/pdfGenerator';
 import { useCategories } from '../hooks/useCategories';
 import { supabase } from '../lib/supabase';
+import { useCategorySync } from '../hooks/useCategorySync';
 
 export function TransactionList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1,
@@ -37,11 +39,16 @@ export function TransactionList() {
     deleteTransaction 
   } = useTransactions();
   
-  const { customCategories, fetchCategories } = useCategories();
+  const { customCategories, fetchCategories, loading: categoriesLoading } = useCategories();
   
   // Sincronizar categorias quando houver atualizações
   useCategorySync(() => {
-    fetchCategories();
+    try {
+      fetchCategories();
+    } catch (err) {
+      console.error('Erro ao sincronizar categorias:', err);
+      setError('Erro ao carregar categorias');
+    }
   });
 
   const itemsPerPage = 10;
@@ -50,26 +57,45 @@ export function TransactionList() {
   const paginatedTransactions = transactions.slice(startIndex, startIndex + itemsPerPage);
 
   useEffect(() => {
-    fetchTransactions(filters);
+    const loadTransactions = async () => {
+      try {
+        await fetchTransactions(filters);
+        setError(null);
+      } catch (err) {
+        console.error('Erro ao carregar transações:', err);
+        setError('Erro ao carregar transações');
+      }
+    };
+    loadTransactions();
   }, [filters]);
 
   useEffect(() => {
     // Recarregar categorias quando o modal for fechado
     if (!isCategoryModalOpen) {
-      fetchCategories();
+      try {
+        fetchCategories();
+      } catch (err) {
+        console.error('Erro ao recarregar categorias:', err);
+      }
     }
   }, [isCategoryModalOpen, fetchCategories]);
 
   const handleSubmit = async (data: any) => {
-    if (editingTransaction) {
-      await updateTransaction(editingTransaction.id, data);
-    } else {
-      await addTransaction(data);
+    try {
+      if (editingTransaction) {
+        await updateTransaction(editingTransaction.id, data);
+      } else {
+        await addTransaction(data);
+      }
+      await fetchTransactions(filters);
+      // Forçar atualização do dashboard
+      window.dispatchEvent(new CustomEvent('transactionUpdated'));
+      setEditingTransaction(null);
+      setError(null);
+    } catch (err) {
+      console.error('Erro ao salvar transação:', err);
+      setError('Erro ao salvar transação');
     }
-    fetchTransactions(filters);
-    // Forçar atualização do dashboard
-    window.dispatchEvent(new CustomEvent('transactionUpdated'));
-    setEditingTransaction(null);
   };
 
   const handleEdit = (transaction: Transaction) => {
@@ -184,6 +210,19 @@ export function TransactionList() {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Erro</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">Lançamentos</h1>
@@ -351,9 +390,10 @@ export function TransactionList() {
 
       {/* Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {loading ? (
+        {(loading || categoriesLoading) ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Carregando...</span>
           </div>
         ) : (
           <>
