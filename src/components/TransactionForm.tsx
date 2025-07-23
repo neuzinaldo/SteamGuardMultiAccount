@@ -26,21 +26,12 @@ export function TransactionForm({
     category: '',
   });
   const [loading, setLoading] = useState(false);
-  const { customCategories } = useCategories();
-
-  // Recarregar categorias quando o modal abrir
-  useEffect(() => {
-    const handleCategoryUpdate = () => {
-      // Forçar re-render do componente
-      window.location.reload();
-    };
-    
-    window.addEventListener('categoryUpdated', handleCategoryUpdate);
-    
-    return () => {
-      window.removeEventListener('categoryUpdated', handleCategoryUpdate);
-    };
-  }, []);
+  const { customCategories, fetchCategories } = useCategories();
+  
+  // Sincronizar categorias quando houver atualizações
+  useCategorySync(() => {
+    fetchCategories();
+  });
 
   useEffect(() => {
     if (transaction) {

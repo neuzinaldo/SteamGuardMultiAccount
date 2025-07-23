@@ -38,6 +38,11 @@ export function TransactionList() {
   } = useTransactions();
   
   const { customCategories, fetchCategories } = useCategories();
+  
+  // Sincronizar categorias quando houver atualizações
+  useCategorySync(() => {
+    fetchCategories();
+  });
 
   const itemsPerPage = 10;
   const totalPages = Math.ceil(transactions.length / itemsPerPage);
