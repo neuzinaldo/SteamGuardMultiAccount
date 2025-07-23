@@ -42,7 +42,6 @@ export function useCategories() {
         .select();
 
       if (error) throw error;
-      await fetchCategories();
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -63,7 +62,6 @@ export function useCategories() {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      await fetchCategories();
       return { error: null };
     } catch (error) {
       return { error };
@@ -72,6 +70,17 @@ export function useCategories() {
 
   useEffect(() => {
     fetchCategories();
+    
+    // Escutar eventos de atualização de categoria
+    const handleCategoryUpdate = () => {
+      fetchCategories();
+    };
+    
+    window.addEventListener('categoryUpdated', handleCategoryUpdate);
+    
+    return () => {
+      window.removeEventListener('categoryUpdated', handleCategoryUpdate);
+    };
   }, []);
 
   return {

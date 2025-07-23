@@ -23,7 +23,9 @@ export function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
       if (!result.error) {
         setNewCategoryName('');
         setNewCategoryType('expense');
-        // Disparar evento para atualizar outros componentes
+        // Recarregar as categorias imediatamente
+        await fetchCategories();
+        // Disparar evento para outros componentes
         window.dispatchEvent(new CustomEvent('categoryUpdated'));
       } else {
         alert('Erro ao criar categoria: ' + result.error.message);
@@ -41,8 +43,8 @@ export function CategoryModal({ isOpen, onClose }: CategoryModalProps) {
       if (result.error) {
         alert('Erro ao excluir categoria: ' + result.error.message);
       } else {
-        // Disparar evento para atualizar outros componentes
-        window.dispatchEvent(new CustomEvent('categoryUpdated'));
+        // Recarregar as categorias imediatamente
+        await fetchCategories();
       }
     }
   };

@@ -28,6 +28,20 @@ export function TransactionForm({
   const [loading, setLoading] = useState(false);
   const { customCategories } = useCategories();
 
+  // Recarregar categorias quando o modal abrir
+  useEffect(() => {
+    const handleCategoryUpdate = () => {
+      // Forçar re-render do componente
+      window.location.reload();
+    };
+    
+    window.addEventListener('categoryUpdated', handleCategoryUpdate);
+    
+    return () => {
+      window.removeEventListener('categoryUpdated', handleCategoryUpdate);
+    };
+  }, []);
+
   useEffect(() => {
     if (transaction) {
       setFormData({
