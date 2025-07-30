@@ -164,6 +164,16 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     }
     doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 45);
 
+    // Debug: Log the values to console
+    console.log('Resumo Anual Debug:', {
+      yearlyIncome,
+      yearlyExpense,
+      yearlyBalance,
+      finalY,
+      reportType,
+      isMonthly
+    });
+
     // Add detailed transactions if there's space
     if (finalY + 70 < 250 && transactions.length > 0) {
       doc.setFontSize(14);
