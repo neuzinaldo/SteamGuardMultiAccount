@@ -49,18 +49,18 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     let yearlyIncome = 0;
     let yearlyExpense = 0;
 
-    // Calculate totals
-    yearlyIncome = transactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
-    yearlyExpense = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + Number(t.amount), 0);
-
     let summaryData = [];
 
     if (isMonthly) {
+      // Calculate totals for monthly report
+      yearlyIncome = transactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      yearlyExpense = transactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
       // Para relatório mensal, mostrar resumo por categoria
       const categories = [...new Set(transactions.map(t => t.category))];
       
@@ -104,6 +104,10 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
           .reduce((sum, t) => sum + Number(t.amount), 0);
 
         const balance = income - expense;
+        
+        // Acumular totais anuais
+        yearlyIncome += income;
+        yearlyExpense += expense;
 
         summaryData.push([
           months[monthNum - 1],
