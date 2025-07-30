@@ -130,7 +130,7 @@ export function TransactionList() {
     }
   };
 
-  const handleGenerateAnnualPDF = () => {
+  const handleGenerateAnnualPDF = async () => {
     try {
       if (transactions.length === 0) {
         alert('Não há transações para gerar o relatório.');
@@ -143,7 +143,7 @@ export function TransactionList() {
         return transactionDate.getFullYear() === filters.year;
       });
       
-      const success = generatePDFReport(yearTransactions, filters.year, false);
+      const success = await generatePDFReport(yearTransactions, filters.year, false);
       
       if (success) {
         alert('Relatório anual gerado com sucesso!');
@@ -155,14 +155,14 @@ export function TransactionList() {
     }
   };
 
-  const handleGenerateMonthlyPDF = () => {
+  const handleGenerateMonthlyPDF = async () => {
     try {
       if (transactions.length === 0) {
         alert('Não há transações para gerar o relatório.');
         return;
       }
       
-      const success = generatePDFReport(transactions, filters.year, true, filters.month);
+      const success = await generatePDFReport(transactions, filters.year, true, filters.month);
       
       if (success) {
         alert('Relatório mensal gerado com sucesso!');

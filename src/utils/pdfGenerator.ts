@@ -2,13 +2,27 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Transaction } from '../types';
 import { format } from 'date-fns';
+import { supabase } from '../lib/supabase';
 
-export function generatePDFReport(transactions: Transaction[], year: number, isMonthly: boolean = false, month?: number) {
+export async function generatePDFReport(transactions: Transaction[], year: number, isMonthly: boolean = false, month?: number) {
   try {
     const reportType = isMonthly ? 'Mensal' : 'Anual';
     const periodText = isMonthly && month ? 
       `${format(new Date(year, month - 1, 1), 'MMMM')} de ${year}` : 
       `${year}`;
+    
+    // Obter email do usuário logado
+    let userEmail = 'Usuário não identificado';
+    if (supabase) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          userEmail = user.email;
+        }
+      } catch (error) {
+        console.log('Erro ao obter usuário:', error);
+      }
+    }
     
     const doc = new jsPDF();
 
@@ -20,7 +34,17 @@ export function generatePDFReport(transactions: Transaction[], year: number, isM
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
     doc.text(`Período: ${periodText}`, 20, 45);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
+    
+    // Adicionar informações de geração
+    if (!isMonthly) {
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      doc.text('Relatório gerado', 20, 55);
+      doc.text(`Email: ${userEmail}`, 20, 65);
+      doc.text(`Data/Hora: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 75);
+    } else {
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
+    }
 
     let yearlyIncome = 0;
     let yearlyExpense = 0;
@@ -99,7 +123,7 @@ export function generatePDFReport(transactions: Transaction[], year: number, isM
     autoTable(doc, {
       head: [headerRow],
       body: summaryData,
-      startY: 70,
+      startY: isMonthly ? 70 : 85,
       styles: {
         fontSize: 10,
         cellPadding: 5,
