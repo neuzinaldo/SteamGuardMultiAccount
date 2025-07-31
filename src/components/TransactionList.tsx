@@ -132,18 +132,35 @@ export function TransactionList() {
 
   const handleGenerateAnnualPDF = async () => {
     try {
-      if (transactions.length === 0) {
-        alert('Não há transações para gerar o relatório.');
+      // Buscar TODAS as transações do ano, não apenas as filtradas
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        alert('Usuário não autenticado');
+        return;
+      }
+
+      // Buscar todas as transações do ano diretamente do banco
+      const { data: allYearTransactions, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .gte('date', `${filters.year}-01-01`)
+        .lte('date', `${filters.year}-12-31`)
+        .order('date', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar transações:', error);
+        alert('Erro ao buscar transações do ano');
+        return;
+      }
+
+      if (!allYearTransactions || allYearTransactions.length === 0) {
+        alert('Não há transações para gerar o relatório anual.');
         return;
       }
       
-      // Buscar todas as transações do ano
-      const yearTransactions = transactions.filter(t => {
-        const transactionDate = new Date(t.date);
-        return transactionDate.getFullYear() === filters.year;
-      });
-      
-      const success = await generatePDFReport(yearTransactions, filters.year, false);
+      console.log(`Gerando relatório anual com ${allYearTransactions.length} transações`);
+      const success = await generatePDFReport(allYearTransactions, filters.year, false);
       
       if (success) {
         alert('Relatório anual gerado com sucesso!');

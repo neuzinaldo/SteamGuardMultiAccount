@@ -85,17 +85,23 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
       });
     } else {
       // Para relatório anual, calcular totais de TODAS as transações do ano
-      console.log('Transações recebidas para relatório anual:', transactions.length);
+      console.log('=== RELATÓRIO ANUAL ===');
+      console.log('Transações recebidas:', transactions.length);
+      console.log('Ano do relatório:', year);
       
       // Filtrar transações do ano específico
       const yearTransactions = transactions.filter(t => {
         const transactionDate = new Date(t.date);
         const transactionYear = transactionDate.getFullYear();
-        console.log(`Transação: ${t.date}, Ano: ${transactionYear}, Ano filtro: ${year}`);
         return transactionYear === year;
       });
       
-      console.log('Transações filtradas do ano:', yearTransactions.length);
+      console.log('Transações do ano filtradas:', yearTransactions.length);
+      
+      // Log das transações para debug
+      yearTransactions.forEach(t => {
+        console.log(`${t.date} - ${t.type} - ${t.category} - R$ ${t.amount}`);
+      });
       
       // Calcular totais anuais ANTES do loop mensal
       yearlyIncome = yearTransactions
@@ -106,7 +112,7 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
       
-      console.log('Totais anuais calculados:', { yearlyIncome, yearlyExpense });
+      console.log('Totais anuais:', { yearlyIncome, yearlyExpense, saldo: yearlyIncome - yearlyExpense });
       
       // Para relatório anual, mostrar resumo mensal
       const months = [
@@ -129,6 +135,10 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
           .reduce((sum, t) => sum + Number(t.amount), 0);
 
         const balance = income - expense;
+        
+        if (income > 0 || expense > 0) {
+          console.log(`${months[monthNum - 1]}: Entrada R$ ${income}, Saída R$ ${expense}, Saldo R$ ${balance}`);
+        }
 
         summaryData.push([
           months[monthNum - 1],
