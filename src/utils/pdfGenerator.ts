@@ -46,6 +46,7 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
     }
 
+    // Inicializar totais
     let yearlyIncome = 0;
     let yearlyExpense = 0;
 
@@ -83,6 +84,30 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
         }
       });
     } else {
+      // Para relatório anual, calcular totais de TODAS as transações do ano
+      console.log('Transações recebidas para relatório anual:', transactions.length);
+      
+      // Filtrar transações do ano específico
+      const yearTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        const transactionYear = transactionDate.getFullYear();
+        console.log(`Transação: ${t.date}, Ano: ${transactionYear}, Ano filtro: ${year}`);
+        return transactionYear === year;
+      });
+      
+      console.log('Transações filtradas do ano:', yearTransactions.length);
+      
+      // Calcular totais anuais ANTES do loop mensal
+      yearlyIncome = yearTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      yearlyExpense = yearTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+      
+      console.log('Totais anuais calculados:', { yearlyIncome, yearlyExpense });
+      
       // Para relatório anual, mostrar resumo mensal
       const months = [
         'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -90,9 +115,9 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
       ];
 
       for (let monthNum = 1; monthNum <= 12; monthNum++) {
-        const monthTransactions = transactions.filter(t => {
+        const monthTransactions = yearTransactions.filter(t => {
           const transactionDate = new Date(t.date);
-          return transactionDate.getMonth() + 1 === monthNum && transactionDate.getFullYear() === year;
+          return transactionDate.getMonth() + 1 === monthNum;
         });
 
         const income = monthTransactions
@@ -104,10 +129,6 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
           .reduce((sum, t) => sum + Number(t.amount), 0);
 
         const balance = income - expense;
-        
-        // Acumular totais anuais
-        yearlyIncome += income;
-        yearlyExpense += expense;
 
         summaryData.push([
           months[monthNum - 1],
@@ -145,6 +166,15 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     // Get the final Y position from the last table
     const finalY = (doc as any).lastAutoTable.finalY + 20;
     
+    // Debug: Log dos valores finais
+    console.log('Valores para o resumo final:', {
+      yearlyIncome,
+      yearlyExpense,
+      yearlyBalance: yearlyIncome - yearlyExpense,
+      reportType,
+      isMonthly
+    });
+    
     // Add yearly totals
     doc.setFontSize(14);
     doc.setTextColor(40, 40, 40);
@@ -164,15 +194,6 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     }
     doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 45);
 
-    // Debug: Log the values to console
-    console.log('Resumo Anual Debug:', {
-      yearlyIncome,
-      yearlyExpense,
-      yearlyBalance,
-      finalY,
-      reportType,
-      isMonthly
-    });
 
     // Add detailed transactions if there's space
     if (finalY + 70 < 250 && transactions.length > 0) {
@@ -180,9 +201,12 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
       doc.setTextColor(40, 40, 40);
       doc.text(`Transações Detalhadas (${isMonthly ? 'Todas' : 'Últimas 20'}):`, 20, finalY + 65);
 
-      const detailedData = transactions
+      const transactionsForDetails = isMonthly ? transactions : 
+        transactions.filter(t => new Date(t.date).getFullYear() === year);
+      
+      const detailedData = transactionsForDetails
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, isMonthly ? transactions.length : 20)
+        .slice(0, isMonthly ? transactionsForDetails.length : 20)
         .map(t => [
           new Date(t.date).toLocaleDateString('pt-BR'),
           t.type === 'income' ? 'Entrada' : 'Saída',
