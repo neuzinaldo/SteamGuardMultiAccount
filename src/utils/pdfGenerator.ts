@@ -31,18 +31,11 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     doc.setTextColor(40, 40, 40);
     doc.text(`Relatório ${reportType} de Movimentação de Caixa`, 20, 30);
 
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Período: ${periodText}`, 20, 45);
-    
-    // Adicionar informações de geração
-    if (!isMonthly) {
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      doc.text('Relatório gerado', 20, 55);
-      doc.text(`Email: ${userEmail}`, 20, 65);
-      doc.text(`Data/Hora: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 75);
-    } else {
+    // Adicionar informações de geração apenas para relatório mensal
+    if (isMonthly) {
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Período: ${periodText}`, 20, 45);
       doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, 20, 55);
     }
 
@@ -168,7 +161,7 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     autoTable(doc, {
       head: [headerRow],
       body: summaryData,
-      startY: isMonthly ? 70 : 85,
+      startY: isMonthly ? 70 : 50,
       styles: {
         fontSize: 10,
         cellPadding: 5,
