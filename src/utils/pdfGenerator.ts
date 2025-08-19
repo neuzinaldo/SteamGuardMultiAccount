@@ -300,6 +300,8 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
         },
         margin: { top: 20, bottom: 20 },
       });
+    }
+
     // Save the PDF
     const fileName = isMonthly ? 
       `relatorio-mensal-${year}-${month?.toString().padStart(2, '0')}.pdf` :
