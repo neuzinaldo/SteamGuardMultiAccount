@@ -188,15 +188,22 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
       isMonthly
     });
     
+    // Check if there's enough space for the summary, if not add a new page
+    let summaryY = finalY;
+    if (finalY > 700) {
+      doc.addPage();
+      summaryY = 50;
+    }
+    
     // Add yearly totals
     doc.setFontSize(14);
     doc.setTextColor(40, 40, 40);
-    doc.text(`Resumo ${reportType}:`, 20, finalY);
+    doc.text(`Resumo ${reportType}:`, 20, summaryY);
 
     doc.setFontSize(12);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Total de Entradas: R$ ${yearlyIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 15);
-    doc.text(`Total de Saídas: R$ ${yearlyExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 30);
+    doc.text(`Total de Entradas: R$ ${yearlyIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, summaryY + 15);
+    doc.text(`Total de Saídas: R$ ${yearlyExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, summaryY + 30);
     
     const yearlyBalance = yearlyIncome - yearlyExpense;
     // Set color based on balance (green for positive, red for negative)
@@ -205,14 +212,15 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
     } else {
       doc.setTextColor(239, 68, 68);
     }
-    doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, finalY + 45);
+    doc.text(`Saldo Final: R$ ${yearlyBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 20, summaryY + 45);
 
 
     // Add detailed transactions if there's space
-    if (finalY + 70 < 250 && transactions.length > 0) {
+    const detailsStartY = summaryY + 70;
+    if (detailsStartY < 700 && transactions.length > 0) {
       doc.setFontSize(14);
       doc.setTextColor(40, 40, 40);
-      doc.text(`Transações Detalhadas (${isMonthly ? 'Todas' : 'Últimas 20'}):`, 20, finalY + 65);
+      doc.text(`Transações Detalhadas (${isMonthly ? 'Todas' : 'Últimas 20'}):`, 20, detailsStartY - 5);
 
       const transactionsForDetails = isMonthly ? transactions : 
         transactions.filter(t => new Date(t.date).getFullYear() === year);
@@ -231,7 +239,7 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
       autoTable(doc, {
         head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
         body: detailedData,
-        startY: finalY + 75,
+        startY: detailsStartY,
         styles: {
           fontSize: 8,
           cellPadding: 3,
@@ -247,9 +255,51 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
         columnStyles: {
           3: { cellWidth: 50 },
         },
+        margin: { top: 20, bottom: 20 },
       });
+    } else if (transactions.length > 0 && detailsStartY >= 700) {
+      // If there's no space on current page, add transactions on new page
+      doc.addPage();
+      doc.setFontSize(14);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`Transações Detalhadas (${isMonthly ? 'Todas' : 'Últimas 20'}):`, 20, 50);
+
+      const transactionsForDetails = isMonthly ? transactions : 
+        transactions.filter(t => new Date(t.date).getFullYear() === year);
+      
+      const detailedData = transactionsForDetails
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, isMonthly ? transactionsForDetails.length : 20)
+        .map(t => [
+          new Date(t.date).toLocaleDateString('pt-BR'),
+          t.type === 'income' ? 'Entrada' : 'Saída',
+          t.category,
+          t.description.length > 30 ? t.description.substring(0, 30) + '...' : t.description,
+          `R$ ${Number(t.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        ]);
     }
 
+      autoTable(doc, {
+        head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
+        body: detailedData,
+        startY: 65,
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+        },
+        headStyles: {
+          fillColor: [59, 130, 246],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          3: { cellWidth: 50 },
+        },
+        margin: { top: 20, bottom: 20 },
+      });
     // Save the PDF
     const fileName = isMonthly ? 
       `relatorio-mensal-${year}-${month?.toString().padStart(2, '0')}.pdf` :
