@@ -141,57 +141,6 @@ export async function generatePDFReport(
         },
         margin: { left: margin, right: margin }
       });
-
-      currentY = (doc as any).lastAutoTable.finalY + 25;
-
-      // Verificar se precisa de nova página
-      if (currentY > pageHeight - 100) {
-        doc.addPage();
-        currentY = 30;
-      }
-
-      // RESUMO POR CATEGORIA
-      doc.setFontSize(18);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(70, 130, 180);
-      doc.text('RESUMO POR CATEGORIA', margin, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 15;
-
-      const categoryData = getCategorySummary(transactions);
-      
-      if (categoryData.length > 0) {
-        // Tabela de categorias sem bordas
-        autoTable(doc, {
-          head: [['Categoria', 'Tipo', 'Quantidade', 'Total']],
-          body: categoryData,
-          startY: currentY,
-          theme: 'plain', // Sem bordas
-          styles: {
-            fontSize: 10,
-            cellPadding: 6,
-            textColor: [0, 0, 0],
-            lineColor: [255, 255, 255], // Linhas invisíveis
-            lineWidth: 0
-          },
-          headStyles: {
-            fillColor: [240, 255, 240], // Verde muito claro
-            textColor: [34, 139, 34],
-            fontStyle: 'bold',
-            fontSize: 11
-          },
-          alternateRowStyles: {
-            fillColor: [250, 250, 250] // Cinza muito claro
-          },
-          columnStyles: {
-            0: { cellWidth: 60 },
-            1: { cellWidth: 30, halign: 'center' },
-            2: { cellWidth: 25, halign: 'center' },
-            3: { cellWidth: 40, halign: 'right' }
-          },
-          margin: { left: margin, right: margin }
-        });
-      }
     } else {
       // Caso não tenha transações
       doc.setFontSize(14);
@@ -240,34 +189,6 @@ export async function generatePDFReport(
     console.error('Erro ao gerar PDF:', error);
     throw new Error(`Falha ao gerar relatorio: ${error.message}`);
   }
-}
-
-function getCategorySummary(transactions: Transaction[]) {
-  const categoryMap = new Map();
-
-  transactions.forEach(transaction => {
-    const key = `${transaction.category}-${transaction.type}`;
-    if (!categoryMap.has(key)) {
-      categoryMap.set(key, {
-        category: transaction.category,
-        type: transaction.type,
-        count: 0,
-        total: 0
-      });
-    }
-    const item = categoryMap.get(key);
-    item.count++;
-    item.total += transaction.amount;
-  });
-
-  return Array.from(categoryMap.values())
-    .sort((a, b) => b.total - a.total)
-    .map(item => [
-      item.category,
-      item.type === 'income' ? 'Entrada' : 'Saida',
-      item.count.toString(),
-      formatCurrency(item.total)
-    ]);
 }
 
 function getMonthName(month?: number): string {
