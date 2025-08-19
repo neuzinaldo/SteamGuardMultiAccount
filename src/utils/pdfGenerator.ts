@@ -120,6 +120,10 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
         'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
       ];
 
+      // Resetar totais anuais antes do loop
+      yearlyIncome = 0;
+      yearlyExpense = 0;
+
       for (let monthNum = 1; monthNum <= 12; monthNum++) {
         const monthTransactions = yearTransactions.filter(t => {
           const transactionDate = new Date(t.date);
@@ -136,6 +140,10 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
 
         const balance = income - expense;
         
+        // Acumular totais anuais
+        yearlyIncome += income;
+        yearlyExpense += expense;
+        
         if (income > 0 || expense > 0) {
           console.log(`${months[monthNum - 1]}: Entrada R$ ${income}, Saída R$ ${expense}, Saldo R$ ${balance}`);
         }
@@ -147,6 +155,8 @@ export async function generatePDFReport(transactions: Transaction[], year: numbe
           `R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
         ]);
       }
+      
+      console.log('Totais anuais calculados no loop:', { yearlyIncome, yearlyExpense, saldo: yearlyIncome - yearlyExpense });
     }
 
     // Add summary table
