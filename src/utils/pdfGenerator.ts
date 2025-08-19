@@ -17,11 +17,8 @@ export async function generatePDFReport(
     const margin = 20;
     let currentY = 30;
 
-    // Configurar fonte padrão
-    doc.setFont('helvetica', 'normal');
-
     // CABEÇALHO
-    doc.setFontSize(20);
+    doc.setFontSize(24);
     doc.setFont('helvetica', 'bold');
     const title = isMonthly 
       ? `Relatorio Mensal - ${getMonthName(month)} ${year}`
@@ -29,56 +26,63 @@ export async function generatePDFReport(
     
     const titleWidth = doc.getTextWidth(title);
     doc.text(title, (pageWidth - titleWidth) / 2, currentY);
+    currentY += 10;
+
+    // Linha decorativa
+    doc.setDrawColor(70, 130, 180);
+    doc.setLineWidth(2);
+    doc.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 15;
 
     // Data de geração
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
     const currentDate = format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR });
     const dateText = `Gerado em: ${currentDate}`;
     const dateWidth = doc.getTextWidth(dateText);
     doc.text(dateText, (pageWidth - dateWidth) / 2, currentY);
     currentY += 25;
 
+    // Reset cor do texto
+    doc.setTextColor(0, 0, 0);
+
     // RESUMO FINANCEIRO
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(70, 130, 180);
     doc.text('RESUMO FINANCEIRO', margin, currentY);
+    doc.setTextColor(0, 0, 0);
     currentY += 15;
 
     const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     const balance = income - expense;
 
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
+    // Resumo sem bordas - apenas texto formatado
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
     
-    // Criar tabela para o resumo
-    const summaryData = [
-      ['Total de Entradas', formatCurrency(income)],
-      ['Total de Saidas', formatCurrency(expense)],
-      ['Saldo Final', formatCurrency(balance)]
-    ];
+    // Entradas
+    doc.setTextColor(34, 139, 34);
+    doc.text('Total de Entradas:', margin, currentY);
+    doc.text(formatCurrency(income), margin + 80, currentY);
+    currentY += 12;
 
-    autoTable(doc, {
-      body: summaryData,
-      startY: currentY,
-      theme: 'grid',
-      styles: {
-        fontSize: 12,
-        cellPadding: 8,
-        textColor: [0, 0, 0],
-        lineColor: [0, 0, 0],
-        lineWidth: 0.5
-      },
-      columnStyles: {
-        0: { fontStyle: 'bold', cellWidth: 80 },
-        1: { halign: 'right', cellWidth: 60 }
-      },
-      margin: { left: margin, right: margin }
-    });
+    // Saídas
+    doc.setTextColor(220, 38, 38);
+    doc.text('Total de Saidas:', margin, currentY);
+    doc.text(formatCurrency(expense), margin + 80, currentY);
+    currentY += 12;
 
-    currentY = (doc as any).lastAutoTable.finalY + 20;
+    // Saldo
+    doc.setTextColor(balance >= 0 ? 34 : 220, balance >= 0 ? 139 : 38, balance >= 0 ? 34 : 38);
+    doc.text('Saldo Final:', margin, currentY);
+    doc.text(formatCurrency(balance), margin + 80, currentY);
+    currentY += 25;
+
+    // Reset cor
+    doc.setTextColor(0, 0, 0);
 
     // Verificar se precisa de nova página
     if (currentY > pageHeight - 60) {
@@ -88,9 +92,11 @@ export async function generatePDFReport(
 
     // LISTA DE TRANSAÇÕES
     if (transactions.length > 0) {
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(70, 130, 180);
       doc.text('LISTA DE TRANSACOES', margin, currentY);
+      doc.setTextColor(0, 0, 0);
       currentY += 15;
 
       // Preparar dados das transações
@@ -100,77 +106,82 @@ export async function generatePDFReport(
           format(new Date(transaction.date), 'dd/MM/yyyy'),
           transaction.type === 'income' ? 'Entrada' : 'Saida',
           transaction.category,
-          truncateText(transaction.description, 30),
+          truncateText(transaction.description, 35),
           formatCurrency(transaction.amount)
         ]);
 
+      // Tabela sem bordas
       autoTable(doc, {
         head: [['Data', 'Tipo', 'Categoria', 'Descricao', 'Valor']],
         body: transactionData,
         startY: currentY,
-        theme: 'striped',
+        theme: 'plain', // Sem bordas
         styles: {
-          fontSize: 9,
-          cellPadding: 4,
+          fontSize: 10,
+          cellPadding: 6,
           textColor: [0, 0, 0],
-          lineColor: [0, 0, 0],
-          lineWidth: 0.1
+          lineColor: [255, 255, 255], // Linhas invisíveis
+          lineWidth: 0
         },
         headStyles: {
-          fillColor: [70, 130, 180],
-          textColor: [255, 255, 255],
+          fillColor: [240, 248, 255], // Azul muito claro
+          textColor: [70, 130, 180],
           fontStyle: 'bold',
-          fontSize: 10
+          fontSize: 11
         },
         alternateRowStyles: {
-          fillColor: [245, 245, 245]
+          fillColor: [248, 248, 248] // Cinza muito claro
         },
         columnStyles: {
           0: { cellWidth: 25, halign: 'center' },
           1: { cellWidth: 25, halign: 'center' },
           2: { cellWidth: 35 },
-          3: { cellWidth: 65 },
+          3: { cellWidth: 70 },
           4: { cellWidth: 30, halign: 'right' }
         },
         margin: { left: margin, right: margin }
       });
 
-      currentY = (doc as any).lastAutoTable.finalY + 20;
+      currentY = (doc as any).lastAutoTable.finalY + 25;
 
-      // Verificar se precisa de nova página para o resumo por categoria
+      // Verificar se precisa de nova página
       if (currentY > pageHeight - 100) {
         doc.addPage();
         currentY = 30;
       }
 
       // RESUMO POR CATEGORIA
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(70, 130, 180);
       doc.text('RESUMO POR CATEGORIA', margin, currentY);
+      doc.setTextColor(0, 0, 0);
       currentY += 15;
 
       const categoryData = getCategorySummary(transactions);
       
       if (categoryData.length > 0) {
+        // Tabela de categorias sem bordas
         autoTable(doc, {
-          head: [['Categoria', 'Tipo', 'Qtd', 'Total']],
+          head: [['Categoria', 'Tipo', 'Quantidade', 'Total']],
           body: categoryData,
           startY: currentY,
-          theme: 'striped',
+          theme: 'plain', // Sem bordas
           styles: {
             fontSize: 10,
-            cellPadding: 5,
+            cellPadding: 6,
             textColor: [0, 0, 0],
-            lineColor: [0, 0, 0],
-            lineWidth: 0.1
+            lineColor: [255, 255, 255], // Linhas invisíveis
+            lineWidth: 0
           },
           headStyles: {
-            fillColor: [34, 139, 34],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold'
+            fillColor: [240, 255, 240], // Verde muito claro
+            textColor: [34, 139, 34],
+            fontStyle: 'bold',
+            fontSize: 11
           },
           alternateRowStyles: {
-            fillColor: [248, 248, 248]
+            fillColor: [250, 250, 250] // Cinza muito claro
           },
           columnStyles: {
             0: { cellWidth: 60 },
@@ -184,16 +195,27 @@ export async function generatePDFReport(
     } else {
       // Caso não tenha transações
       doc.setFontSize(14);
-      doc.setFont('helvetica', 'normal');
-      doc.text('Nenhuma transacao encontrada para o periodo selecionado.', margin, currentY);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(150, 150, 150);
+      const noDataText = 'Nenhuma transacao encontrada para o periodo selecionado.';
+      const textWidth = doc.getTextWidth(noDataText);
+      doc.text(noDataText, (pageWidth - textWidth) / 2, currentY);
     }
 
-    // Rodapé
+    // Rodapé minimalista
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150, 150, 150);
+      
+      // Linha decorativa no rodapé
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+      
+      // Textos do rodapé
       doc.text(
         `Pagina ${i} de ${totalPages}`,
         pageWidth - margin - 30,
