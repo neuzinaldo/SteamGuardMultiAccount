@@ -17,11 +17,11 @@ export async function generatePDFReport(
     let currentY = 30;
 
     // CABEÇALHO
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     const title = isMonthly 
-      ? `RELATÓRIO MENSAL - CONTROLE DE CAIXA`
-      : `RELATÓRIO ANUAL - CONTROLE DE CAIXA`;
+      ? 'RELATORIO MENSAL - CONTROLE DE CAIXA'
+      : 'RELATORIO ANUAL - CONTROLE DE CAIXA';
     doc.text(title, pageWidth / 2, currentY, { align: 'center' });
     currentY += 15;
 
@@ -31,14 +31,14 @@ export async function generatePDFReport(
     
     if (isMonthly && month) {
       const monthName = format(new Date(year, month - 1, 1), 'MMMM yyyy', { locale: ptBR });
-      doc.text(`Período: ${monthName}`, pageWidth / 2, currentY, { align: 'center' });
+      doc.text(`Periodo: ${monthName}`, pageWidth / 2, currentY, { align: 'center' });
       currentY += 8;
     } else {
       doc.text(`Ano: ${year}`, pageWidth / 2, currentY, { align: 'center' });
       currentY += 8;
     }
 
-    const currentDate = format(new Date(), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR });
+    const currentDate = format(new Date(), "dd/MM/yyyy 'as' HH:mm", { locale: ptBR });
     doc.text(`Gerado em: ${currentDate}`, pageWidth / 2, currentY, { align: 'center' });
     currentY += 20;
 
@@ -48,10 +48,8 @@ export async function generatePDFReport(
     currentY += 15;
 
     if (isMonthly) {
-      // ===== RELATÓRIO MENSAL =====
       await generateMonthlyReport(doc, transactions, currentY, margin, pageWidth);
     } else {
-      // ===== RELATÓRIO ANUAL =====
       await generateAnnualReport(doc, transactions, year, currentY, margin, pageWidth);
     }
 
@@ -79,37 +77,39 @@ async function generateMonthlyReport(
   let currentY = startY;
 
   // RESUMO FINANCEIRO
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('📊 RESUMO FINANCEIRO', margin, currentY);
-  currentY += 10;
+  doc.text('RESUMO FINANCEIRO', margin, currentY);
+  currentY += 15;
 
   const income = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const expense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const balance = income - expense;
 
   const summaryData = [
-    ['💰 Total de Entradas', formatCurrency(income), income > 0 ? '✅' : '⚠️'],
-    ['💸 Total de Saídas', formatCurrency(expense), expense > 0 ? '📉' : '✅'],
-    ['📊 Saldo do Período', formatCurrency(balance), balance >= 0 ? '✅ Positivo' : '⚠️ Negativo']
+    ['Total de Entradas', formatCurrency(income)],
+    ['Total de Saidas', formatCurrency(expense)],
+    ['Saldo do Periodo', formatCurrency(balance)]
   ];
 
   autoTable(doc, {
-    head: [['Descrição', 'Valor', 'Status']],
+    head: [['Descricao', 'Valor']],
     body: summaryData,
     startY: currentY,
     theme: 'grid',
     headStyles: { 
       fillColor: [52, 152, 219],
       textColor: 255,
-      fontSize: 11,
+      fontSize: 12,
       fontStyle: 'bold'
     },
-    bodyStyles: { fontSize: 10 },
+    bodyStyles: { 
+      fontSize: 11,
+      textColor: 50
+    },
     columnStyles: {
-      0: { cellWidth: 80 },
-      1: { cellWidth: 50, halign: 'right', fontStyle: 'bold' },
-      2: { cellWidth: 40, halign: 'center' }
+      0: { cellWidth: 100, halign: 'left' },
+      1: { cellWidth: 60, halign: 'right', fontStyle: 'bold' }
     },
     margin: { left: margin, right: margin }
   });
@@ -118,30 +118,33 @@ async function generateMonthlyReport(
 
   // ANÁLISE POR CATEGORIA
   if (transactions.length > 0) {
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('📈 ANÁLISE POR CATEGORIA', margin, currentY);
-    currentY += 10;
+    doc.text('ANALISE POR CATEGORIA', margin, currentY);
+    currentY += 15;
 
     const categoryAnalysis = analyzeCategoriesMonthly(transactions);
     
     if (categoryAnalysis.length > 0) {
       autoTable(doc, {
-        head: [['Categoria', 'Tipo', 'Quantidade', 'Total', '% do Total']],
+        head: [['Categoria', 'Tipo', 'Qtd', 'Total', '% do Total']],
         body: categoryAnalysis,
         startY: currentY,
         theme: 'striped',
         headStyles: { 
           fillColor: [46, 125, 50],
           textColor: 255,
-          fontSize: 10,
+          fontSize: 11,
           fontStyle: 'bold'
         },
-        bodyStyles: { fontSize: 9 },
+        bodyStyles: { 
+          fontSize: 10,
+          textColor: 50
+        },
         columnStyles: {
-          0: { cellWidth: 50 },
-          1: { cellWidth: 25, halign: 'center' },
-          2: { cellWidth: 25, halign: 'center' },
+          0: { cellWidth: 50, halign: 'left' },
+          1: { cellWidth: 30, halign: 'center' },
+          2: { cellWidth: 20, halign: 'center' },
           3: { cellWidth: 40, halign: 'right' },
           4: { cellWidth: 30, halign: 'right' }
         },
@@ -160,10 +163,10 @@ async function generateMonthlyReport(
       currentY = 30;
     }
 
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('📋 TRANSAÇÕES DETALHADAS', margin, currentY);
-    currentY += 10;
+    doc.text('TRANSACOES DETALHADAS', margin, currentY);
+    currentY += 15;
 
     const sortedTransactions = transactions.sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -171,29 +174,32 @@ async function generateMonthlyReport(
 
     const detailedData = sortedTransactions.map(t => [
       format(new Date(t.date), 'dd/MM'),
-      t.type === 'income' ? '💰 Entrada' : '💸 Saída',
+      t.type === 'income' ? 'Entrada' : 'Saida',
       t.category,
-      t.description.length > 35 ? t.description.substring(0, 35) + '...' : t.description,
+      t.description.length > 30 ? t.description.substring(0, 30) + '...' : t.description,
       formatCurrency(t.amount)
     ]);
 
     autoTable(doc, {
-      head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
+      head: [['Data', 'Tipo', 'Categoria', 'Descricao', 'Valor']],
       body: detailedData,
       startY: currentY,
       theme: 'grid',
       headStyles: { 
         fillColor: [84, 110, 122],
         textColor: 255,
-        fontSize: 9,
+        fontSize: 10,
         fontStyle: 'bold'
       },
-      bodyStyles: { fontSize: 8 },
+      bodyStyles: { 
+        fontSize: 9,
+        textColor: 50
+      },
       columnStyles: {
-        0: { cellWidth: 20 },
-        1: { cellWidth: 30 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 70 },
+        0: { cellWidth: 20, halign: 'center' },
+        1: { cellWidth: 25, halign: 'center' },
+        2: { cellWidth: 35, halign: 'left' },
+        3: { cellWidth: 70, halign: 'left' },
         4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
       },
       margin: { left: margin, right: margin },
@@ -213,21 +219,21 @@ async function generateAnnualReport(
   let currentY = startY;
 
   // RESUMO ANUAL
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('📊 RESUMO ANUAL', margin, currentY);
-  currentY += 10;
+  doc.text('RESUMO ANUAL', margin, currentY);
+  currentY += 15;
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   const totalBalance = totalIncome - totalExpense;
 
   const annualSummary = [
-    ['💰 Total de Entradas no Ano', formatCurrency(totalIncome)],
-    ['💸 Total de Saídas no Ano', formatCurrency(totalExpense)],
-    ['📊 Saldo Anual', formatCurrency(totalBalance)],
-    ['📈 Média Mensal de Entradas', formatCurrency(totalIncome / 12)],
-    ['📉 Média Mensal de Saídas', formatCurrency(totalExpense / 12)]
+    ['Total de Entradas no Ano', formatCurrency(totalIncome)],
+    ['Total de Saidas no Ano', formatCurrency(totalExpense)],
+    ['Saldo Anual', formatCurrency(totalBalance)],
+    ['Media Mensal de Entradas', formatCurrency(totalIncome / 12)],
+    ['Media Mensal de Saidas', formatCurrency(totalExpense / 12)]
   ];
 
   autoTable(doc, {
@@ -238,12 +244,15 @@ async function generateAnnualReport(
     headStyles: { 
       fillColor: [156, 39, 176],
       textColor: 255,
-      fontSize: 11,
+      fontSize: 12,
       fontStyle: 'bold'
     },
-    bodyStyles: { fontSize: 10 },
+    bodyStyles: { 
+      fontSize: 11,
+      textColor: 50
+    },
     columnStyles: {
-      0: { cellWidth: 100 },
+      0: { cellWidth: 100, halign: 'left' },
       1: { cellWidth: 60, halign: 'right', fontStyle: 'bold' }
     },
     margin: { left: margin, right: margin }
@@ -252,10 +261,10 @@ async function generateAnnualReport(
   currentY = (doc as any).lastAutoTable.finalY + 20;
 
   // EVOLUÇÃO MENSAL
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('📈 EVOLUÇÃO MENSAL', margin, currentY);
-  currentY += 10;
+  doc.text('EVOLUCAO MENSAL', margin, currentY);
+  currentY += 15;
 
   const monthlyData = [];
   for (let m = 1; m <= 12; m++) {
@@ -269,35 +278,35 @@ async function generateAnnualReport(
     const monthBalance = monthIncome - monthExpense;
 
     const monthName = format(new Date(year, m - 1, 1), 'MMM', { locale: ptBR });
-    const status = monthBalance >= 0 ? '✅' : '⚠️';
     
     monthlyData.push([
       monthName,
       formatCurrency(monthIncome),
       formatCurrency(monthExpense),
-      formatCurrency(monthBalance),
-      status
+      formatCurrency(monthBalance)
     ]);
   }
 
   autoTable(doc, {
-    head: [['Mês', 'Entradas', 'Saídas', 'Saldo', 'Status']],
+    head: [['Mes', 'Entradas', 'Saidas', 'Saldo']],
     body: monthlyData,
     startY: currentY,
     theme: 'striped',
     headStyles: { 
       fillColor: [255, 152, 0],
       textColor: 255,
-      fontSize: 10,
+      fontSize: 11,
       fontStyle: 'bold'
     },
-    bodyStyles: { fontSize: 9 },
+    bodyStyles: { 
+      fontSize: 10,
+      textColor: 50
+    },
     columnStyles: {
-      0: { cellWidth: 25 },
-      1: { cellWidth: 35, halign: 'right' },
-      2: { cellWidth: 35, halign: 'right' },
-      3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
-      4: { cellWidth: 20, halign: 'center' }
+      0: { cellWidth: 30, halign: 'center' },
+      1: { cellWidth: 40, halign: 'right' },
+      2: { cellWidth: 40, halign: 'right' },
+      3: { cellWidth: 40, halign: 'right', fontStyle: 'bold' }
     },
     margin: { left: margin, right: margin }
   });
@@ -312,32 +321,35 @@ async function generateAnnualReport(
       currentY = 30;
     }
 
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('🏆 TOP CATEGORIAS DO ANO', margin, currentY);
-    currentY += 10;
+    doc.text('TOP CATEGORIAS DO ANO', margin, currentY);
+    currentY += 15;
 
     const topCategories = analyzeTopCategories(transactions);
     
     if (topCategories.length > 0) {
       autoTable(doc, {
-        head: [['Posição', 'Categoria', 'Tipo', 'Total', 'Transações']],
+        head: [['Pos.', 'Categoria', 'Tipo', 'Total', 'Transacoes']],
         body: topCategories,
         startY: currentY,
         theme: 'grid',
         headStyles: { 
           fillColor: [233, 30, 99],
           textColor: 255,
-          fontSize: 10,
+          fontSize: 11,
           fontStyle: 'bold'
         },
-        bodyStyles: { fontSize: 9 },
+        bodyStyles: { 
+          fontSize: 10,
+          textColor: 50
+        },
         columnStyles: {
           0: { cellWidth: 20, halign: 'center' },
-          1: { cellWidth: 50 },
-          2: { cellWidth: 25, halign: 'center' },
+          1: { cellWidth: 50, halign: 'left' },
+          2: { cellWidth: 30, halign: 'center' },
           3: { cellWidth: 40, halign: 'right', fontStyle: 'bold' },
-          4: { cellWidth: 25, halign: 'center' }
+          4: { cellWidth: 30, halign: 'center' }
         },
         margin: { left: margin, right: margin }
       });
@@ -368,7 +380,7 @@ function analyzeCategoriesMonthly(transactions: Transaction[]) {
     .sort((a, b) => b.total - a.total)
     .map(item => [
       item.category,
-      item.type === 'income' ? '💰 Entrada' : '💸 Saída',
+      item.type === 'income' ? 'Entrada' : 'Saida',
       item.count.toString(),
       formatCurrency(item.total),
       `${((item.total / totalAmount) * 100).toFixed(1)}%`
@@ -399,7 +411,7 @@ function analyzeTopCategories(transactions: Transaction[]) {
     .map((item, index) => [
       `${index + 1}º`,
       item.category,
-      item.type === 'income' ? '💰 Entrada' : '💸 Saída',
+      item.type === 'income' ? 'Entrada' : 'Saida',
       formatCurrency(item.total),
       item.count.toString()
     ]);
