@@ -22,15 +22,9 @@ export async function generatePDFReport(
       ? `Relatório Mensal - ${getMonthName(month)} ${year}`
       : `Relatório Anual - ${year}`;
     
-    doc.setFontSize(24);
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(70, 130, 180);
     doc.text(title, doc.internal.pageSize.width / 2, 30, { align: 'center' });
-    
-    // Linha decorativa
-    doc.setDrawColor(70, 130, 180);
-    doc.setLineWidth(2);
-    doc.line(20, 35, doc.internal.pageSize.width - 20, 35);
     
     // Data de geração
     const currentDate = new Date().toLocaleDateString('pt-BR');
@@ -40,128 +34,122 @@ export async function generatePDFReport(
     });
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Gerado em: ${currentDate} ${currentTime}`, doc.internal.pageSize.width / 2, 50, { align: 'center' });
+    doc.text(`Gerado em: ${currentDate} às ${currentTime}`, doc.internal.pageSize.width / 2, 45, { align: 'center' });
     
     // Calcular totais
     const totalIncome = transactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     
     const totalExpense = transactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Number(t.amount || 0), 0);
     
     const balance = totalIncome - totalExpense;
     
     // Resumo financeiro
-    let yPosition = 70;
+    let yPosition = 65;
     
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(70, 130, 180);
     doc.text('RESUMO FINANCEIRO', 20, yPosition);
     
     yPosition += 20;
     
     // Total de Entradas
-    doc.setFontSize(14);
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(34, 139, 34);
+    doc.setTextColor(0, 128, 0); // Verde
     doc.text('Total de Entradas:', 20, yPosition);
-    doc.text(formatCurrency(totalIncome), 100, yPosition);
-    
-    yPosition += 17;
-    
-    // Total de Saídas
-    doc.setTextColor(220, 38, 38);
-    doc.text('Total de Saídas:', 20, yPosition);
-    doc.text(formatCurrency(totalExpense), 100, yPosition);
-    
-    yPosition += 17;
-    
-    // Saldo Final
-    doc.setTextColor(balance >= 0 ? 34 : 220, balance >= 0 ? 139 : 38, balance >= 0 ? 34 : 38);
-    doc.text('Saldo Final:', 20, yPosition);
-    doc.text(formatCurrency(balance), 100, yPosition);
-    
-    yPosition += 30;
-    
-    // Lista de transações
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(70, 130, 180);
-    doc.text('LISTA DE TRANSAÇÕES', 20, yPosition);
+    doc.text(formatCurrency(totalIncome), 120, yPosition);
     
     yPosition += 15;
     
-    // Preparar dados para a tabela
-    const tableData = transactions.map(transaction => [
-      new Date(transaction.date).toLocaleDateString('pt-BR'),
-      transaction.type === 'income' ? 'Entrada' : 'Saída',
-      transaction.category,
-      transaction.description,
-      formatCurrency(transaction.amount)
-    ]);
+    // Total de Saídas
+    doc.setTextColor(255, 0, 0); // Vermelho
+    doc.text('Total de Saídas:', 20, yPosition);
+    doc.text(formatCurrency(totalExpense), 120, yPosition);
     
-    // Configurar tabela
-    doc.autoTable({
-      startY: yPosition,
-      head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
-      body: tableData,
-      theme: 'plain',
-      styles: {
-        fontSize: 10,
-        cellPadding: 8,
-        lineColor: [255, 255, 255],
-        lineWidth: 0
-      },
-      headStyles: {
-        fillColor: [240, 248, 255],
-        textColor: [70, 130, 180],
-        fontStyle: 'bold',
-        fontSize: 11
-      },
-      alternateRowStyles: {
-        fillColor: [248, 248, 248]
-      },
-      columnStyles: {
-        0: { cellWidth: 25 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 35 },
-        3: { cellWidth: 70 },
-        4: { cellWidth: 30, halign: 'right' }
-      },
-      didParseCell: function(data) {
-        if (data.section === 'body' && data.column.index === 1) {
-          if (data.cell.text[0] === 'Entrada') {
-            data.cell.styles.textColor = [34, 139, 34];
-          } else {
-            data.cell.styles.textColor = [220, 38, 38];
-          }
-        }
-        if (data.section === 'body' && data.column.index === 4) {
-          const isIncome = tableData[data.row.index][1] === 'Entrada';
-          data.cell.styles.textColor = isIncome ? [34, 139, 34] : [220, 38, 38];
-          data.cell.styles.fontStyle = 'bold';
-        }
-      }
-    });
+    yPosition += 15;
     
-    // Rodapé em todas as páginas
+    // Saldo Final
+    doc.setTextColor(balance >= 0 ? 0 : 255, balance >= 0 ? 128 : 0, 0);
+    doc.text('Saldo Final:', 20, yPosition);
+    doc.text(formatCurrency(balance), 120, yPosition);
+    
+    yPosition += 25;
+    
+    // Lista de transações
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0); // Preto
+    doc.text('LISTA DE TRANSAÇÕES', 20, yPosition);
+    
+    yPosition += 10;
+    
+    // Verificar se há transações
+    if (!transactions || transactions.length === 0) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Nenhuma transação encontrada para o período selecionado.', 20, yPosition + 20);
+    } else {
+      // Preparar dados para a tabela
+      const tableData = transactions.map(transaction => {
+        try {
+          return [
+            new Date(transaction.date).toLocaleDateString('pt-BR'),
+            transaction.type === 'income' ? 'Entrada' : 'Saída',
+            transaction.category || 'Sem categoria',
+            transaction.description || 'Sem descrição',
+            formatCurrency(Number(transaction.amount || 0))
+          ];
+        } catch (error) {
+          console.error('Erro ao processar transação:', transaction, error);
+          return [
+            'Data inválida',
+            transaction.type === 'income' ? 'Entrada' : 'Saída',
+            transaction.category || 'Sem categoria',
+            transaction.description || 'Sem descrição',
+            'R$ 0,00'
+          ];
+        }
+      });
+      
+      // Configurar tabela
+      doc.autoTable({
+        startY: yPosition,
+        head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']],
+        body: tableData,
+        theme: 'plain',
+        styles: {
+          fontSize: 9,
+          cellPadding: 5
+        },
+        headStyles: {
+          fillColor: [240, 240, 240],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+          fillColor: [248, 248, 248]
+        },
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 25 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 80 },
+          4: { cellWidth: 25, halign: 'right' }
+        }
+      });
+    }
+    
+    // Rodapé
     const pageCount = doc.internal.pages.length - 1;
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
-      
-      // Linha do rodapé
-      doc.setDrawColor(70, 130, 180);
-      doc.setLineWidth(0.5);
-      doc.line(20, doc.internal.pageSize.height - 20, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 20);
-      
-      // Texto do rodapé
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
-      doc.setTextColor(150, 150, 150);
+      doc.setTextColor(100, 100, 100);
       doc.text('Sistema de Controle de Caixa', 20, doc.internal.pageSize.height - 10);
       doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 20, doc.internal.pageSize.height - 10, { align: 'right' });
     }
@@ -177,15 +165,21 @@ export async function generatePDFReport(
     
   } catch (error) {
     console.error('Erro ao gerar PDF:', error);
-    throw error;
+    throw new Error(`Erro ao gerar relatório: ${error.message}`);
   }
 }
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
+  try {
+    const numValue = Number(value) || 0;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(numValue);
+  } catch (error) {
+    console.error('Erro ao formatar moeda:', error);
+    return 'R$ 0,00';
+  }
 }
 
 function getMonthName(month: number): string {
@@ -193,5 +187,5 @@ function getMonthName(month: number): string {
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
-  return months[month - 1];
+  return months[month - 1] || 'Mês Inválido';
 }
